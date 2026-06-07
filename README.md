@@ -67,11 +67,13 @@ first, unzip the dataset
 - Python 3.11+
 - pandas
 - numpy
-- pyyaml
+- PyYAML
 - scipy
 - scikit-learn
-- fpdf
+- reportlab
 - matplotlib
+- markdown
+- pytest
 
 ## One-Command Run
     first, unzip the dataset in dataset folder
