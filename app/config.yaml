@@ -1,0 +1,338 @@
+# AI GOVERNANCE PIPELINE CONFIGURATION
+# Version 1 — Dataset Aligned / Production Ready
+
+system:
+
+  system_version: "3.0"
+  pipeline_version: "2.0"
+
+  output_dir: "outputs"
+
+  logging:
+    level: INFO
+
+# ---------------------------------------------------
+# PIPELINE EXECUTION
+# ---------------------------------------------------
+
+pipeline:
+
+  continue_on_failure: false
+
+  stages:
+
+    - validation
+    - statistical
+    - causal
+    - risk
+    - audit
+    - explainability
+
+# ---------------------------------------------------
+# AGENT REGISTRY
+# ---------------------------------------------------
+
+agents:
+
+  validation:
+
+    enabled: true
+
+    requires:
+      data: true
+      context: true
+
+    optional: false
+
+  statistical:
+
+    enabled: true
+
+    requires:
+      data: true
+      context: true
+
+    optional: false
+
+  causal:
+
+    enabled: true
+
+    requires:
+      data: true
+      context: true
+
+    optional: false
+
+  risk:
+
+    enabled: true
+
+    requires:
+      data: false
+      context: true
+
+    optional: false
+
+  audit:
+
+    enabled: true
+
+    requires:
+      data: false
+      context: true
+
+    optional: false
+
+  explainability:
+
+    enabled: true
+    requires:
+      data: false
+      context: true
+
+    optional: true
+
+# ---------------------------------------------------
+# OUTPUT FILES
+# ---------------------------------------------------
+
+outputs:
+
+  full_log: pipeline_full_log.json
+  summary_log: pipeline_summary.json
+
+
+# ---------------------------------------------------
+# REPORTING
+# ---------------------------------------------------
+
+reporting:
+
+  generate_human_report: true
+
+  human_report_path: outputs/human_audit_report.md
+
+# ---------------------------------------------------
+# EXPORT FILTERS
+# ---------------------------------------------------
+
+audit:
+
+  export_risk_levels:
+
+    - high
+    - critical
+
+
+# =========================================================
+# DATA CONFIGURATION
+# =========================================================
+data:
+  dataset_path: "dataset/weekly_merged_dataset.csv"
+  dataset_version: ""
+  source_system: ""
+
+  date_column: "date"
+  location_column: "location_key"
+
+  sort_columns:
+    - location_key
+    - date
+
+  metric_columns:
+    - new_confirmed
+    - new_deceased
+  
+  non_negative_columns:
+    - new_confirmed
+    - new_deceased
+    - new_hospitalized_patients
+    - new_intensive_care_patients
+    - new_persons_vaccinated
+    - new_persons_fully_vaccinated
+    - new_vaccine_doses_administered
+
+  cumulative_columns:
+    - cumulative_confirmed
+    - cumulative_deceased
+    - cumulative_persons_vaccinated
+    - cumulative_persons_fully_vaccinated
+    - cumulative_vaccine_doses_administered
+  
+  required_columns:
+    - "location_key"
+    - "date"
+    - "new_confirmed"
+    - "new_deceased"
+    - "cumulative_confirmed"
+    - "cumulative_deceased"
+    - "new_hospitalized_patients"
+    - "current_hospitalized_patients"
+    - "new_intensive_care_patients"
+    - "current_intensive_care_patients"
+    - "new_persons_vaccinated"
+    - "cumulative_persons_vaccinated"
+    - "new_persons_fully_vaccinated"
+    - "cumulative_persons_fully_vaccinated"
+    - "new_vaccine_doses_administered"
+    - "cumulative_vaccine_doses_administered"
+
+  vaccination_ratio_column: vaccination_ratio
+
+  vaccination_cumulative_columns:
+    - cumulative_persons_fully_vaccinated
+    - cumulative_persons_vaccinated
+    - cumulative_vaccine_doses_administered
+
+# =========================================================
+# VALIDATION AGENT
+# =========================================================
+validation_agent:
+
+  expected_freq: "W"
+  null_threshold_location: 0.0
+  null_threshold_date: 0.0
+  null_threshold_cumulative: 0.02
+  null_threshold_new: 0.10
+  risk_tolerance: 0.07
+
+  severity_weights:
+    critical: 1.0
+    high: 0.7
+    medium: 0.4
+    low: 0.1
+
+  cross_variable_rules:
+    # - left: new_deceased
+    #   right: new_confirmed
+    #   relation: "<="
+
+    - left: current_intensive_care_patients
+      right: current_hospitalized_patients
+      relation: "<="
+      ignore_if_null: true
+      why: "ICU count cannot exceed hospitalized patients"
+      rule: "icu_capacity_constraint"
+      action: "verify_hospital_capacity_data"
+
+# =========================================================
+# STATISTICAL REASONING AGENT
+# =========================================================
+statistical_agent:
+
+  # min_points_for_analysis: 5
+
+  window_size: 4
+  score_window: 30
+
+  zscore_threshold: 1.3
+  # flatline_ratio_threshold: 0.9
+  persistence_steps: 2
+  # ewma_lambda: 0.3
+  # ci_z: 2.58
+  # baseline_window: 14
+
+  ewma_alpha: 0.3
+  drift_alpha": 0.01
+  z_medium: 1.96
+  z_high: 2.58
+  z_critical: 3.5
+
+  cusum_k: 0.5
+  cusum_h: 5
+
+# =========================================================
+# CAUSAL POLICY AGENT
+# =========================================================
+causal_agent:
+
+  horizon: 8
+  ridge_alpha: 0.5
+  bootstrap_samples: 80
+
+  scenario_multipliers:
+    baseline: 1.0
+    vaccination_plus_20: 1.20
+    vaccination_minus_20: 0.80
+
+  regularization: 0.05
+  min_history_weeks: 10
+  verbose:  false
+  vaccine_lag_weeks: 2
+
+  causal_fragility:
+
+    mode: symmetric # or downside
+
+    risk_thresholds:
+      medium: 0.40
+      high: 0.65
+      critical: 0.85
+
+    risk_cap: 1.0
+
+
+# =========================================================
+# RISK ESCALATION AGENT
+# =========================================================
+risk_agent:
+
+  weights:
+    data_quality: 0.25
+    statistical: 0.5
+    causal_fragility: 0.25
+
+  thresholds:
+    low: 0.2
+    medium: 0.4
+    high: 0.68
+    critical: 0.86
+
+  actions:
+    low: routine_monitoring
+    medium: monitor_closely
+    high: open_regional_review
+    critical: immediate_policy_review
+  
+# =========================================================
+# AUDIT AGENT
+# =========================================================
+audit_agent:
+
+  human_review_levels:
+    - high
+    - critical
+
+  statuses:
+    review_required: pending_human_review
+    auto_approved: auto_approved
+
+  max_issues_per_region: 5
+
+# =========================================================
+# EXPLAINABILITY / AUDIT BUILDER
+# =========================================================
+explainability:
+
+  # explanation_settings:
+  #   include_plots: true
+  #   include_root_causes: true
+  #   max_examples: 5
+  #   detail_level: "high"
+
+  pipeline_stages:
+    - Input Data
+    - ValidationAgent
+    - StatisticalReasoningAgent
+    - CausalSimulationAgent
+    - RiskEscalationAgent
+    - AuditAgent
+
+  output_paths:
+    report_folder: "outputs/reports"
+    figure_folder: "outputs/figures"
+    markdown_summary: "outputs/audit_summary.md"
+    audit_log: "outputs/audit_log.json"
+    stress_test_log: "outputs/stress_test_log.json"
+    test_log: "outputs/test_log.json"
