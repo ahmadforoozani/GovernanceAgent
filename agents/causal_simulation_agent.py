@@ -211,9 +211,7 @@ class CausalSimulationAgent:
                 center=False
             ).mean().values
             ratio = self._sanitize_array(smooth)
-        # enforce monotonic increase since vaccination coverage
-        # should not decrease in cumulative statistics
-        # ratio = np.maximum.accumulate(ratio)
+
         return ratio
 
     # ---------------- LAG ----------------

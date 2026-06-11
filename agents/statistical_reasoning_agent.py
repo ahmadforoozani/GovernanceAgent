@@ -50,7 +50,6 @@ class StatisticalReasoningAgent:
     def __init__(self, config, data_config):
         """
         Initialize statistical detection parameters and dataset schema.
-        The design keeps backward compatibility with previous versions.
         """
         logging.info("Initializing Statistical Reasoning Agent.")
         self.config = config
@@ -217,10 +216,6 @@ class StatisticalReasoningAgent:
 
                 # ---------- Compute baseline ----------
                 baseline = self.ewma(x)
-
-                # # freeze baseline for last persistence window to prevent shock adaptation
-                # freeze_k = max(self.persistence_steps, 3)
-                # baseline[-freeze_k:] = baseline[-freeze_k-1]
 
                 if len(baseline) == 0:
                     continue

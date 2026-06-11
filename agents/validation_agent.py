@@ -223,7 +223,6 @@ class ValidationAgent:
         # B) Logical Validation
         # ------------------------------------------------------
 
-        # numeric_new_cols = [c for c in data.columns if c.startswith("new_")]
         # Checking for negative values
 
         for col in self.non_neg_columns:
@@ -244,9 +243,6 @@ class ValidationAgent:
                     risk_level="high",
                     recommended_action="review_data_entry"
                 ))
-
-        # cumulative_cols = [
-        #     c for c in data.columns if c.startswith("cumulative_")]
 
         # Checking Cumulative values must be monotonic
         for col in self.cumulative_columns:
@@ -276,11 +272,6 @@ class ValidationAgent:
                         ))
 
                     prev = r[col]
-
-        # bad_rows = data[
-        #     data["current_intensive_care_patients"] >
-        #     data["current_hospitalized_patients"]
-        # ]
 
         # Finding rows violating cross rules
         for rule in self.rules:

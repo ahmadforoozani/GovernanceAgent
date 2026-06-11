@@ -42,6 +42,8 @@ outputs/*.json
 outputs/*.md
 outputs/*.pdf
 
+# Large dataset files
+dataset/*.csv
 # Temporary files
 *.tmp
 *.temp
