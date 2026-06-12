@@ -258,7 +258,7 @@ class CausalSimulationAgent:
         dates = pd.date_range(
             last_date + pd.Timedelta(days=1),
             periods=horizon,
-            freq="D"
+            freq="W"
         )
 
         doy = dates.dayofyear.values
